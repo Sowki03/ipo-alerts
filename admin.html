@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>IPO Alerts Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/app.css">
+<style>
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+.grid{display:grid;grid-template-columns:1.35fr 1fr;gap:16px;align-items:start}
+.ipo-row.hot td:first-child{font-weight:700}
+.ipo-row.hot{background:var(--brand-soft)}
+.pct{font-weight:700}
+.ipo-row.hot .pct{color:var(--brand)}
+.send-box{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+.send-opt{border:1px solid var(--line);border-radius:12px;padding:14px;display:grid;gap:8px;align-content:start}
+.send-opt h3{font-size:15px}
+.send-opt p{font-size:13px;color:var(--muted)}
+.progress{height:8px;background:var(--surface-2);border-radius:99px;overflow:hidden;margin-top:8px}
+.progress div{height:100%;background:var(--brand);width:0;transition:width .4s}
+.qr img{width:240px;max-width:100%;background:#fff;padding:8px;border-radius:12px;margin-top:12px}
+.add-item{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.add-item:last-child{border-bottom:0}
+.add-item b{display:block}
+.s-active{color:var(--brand);font-weight:600}.s-unsubscribed{color:var(--muted)}
+.err-t{color:var(--danger);font-size:12px}
+.hint{font-size:12px;color:var(--muted)}
+#gate{max-width:420px;margin:60px auto}
+@media (max-width:900px){.grid{grid-template-columns:1fr}}
+@media (max-width:560px){.send-box{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="gate" class="card" hidden></div>
+
+  <div id="app" hidden>
+    <div class="top">
+      <div><h1>IPO Alerts Admin</h1><div class="muted" id="who"></div></div>
+      <div class="row">
+        <span class="badge" id="senderBadge"><i></i><span>PC sender: checking…</span></span>
+        <button class="btn btn-ghost btn-sm" id="signOut">Sign out</button>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="stack">
+        <div class="card">
+          <div class="row" style="justify-content:space-between">
+            <h2 style="margin:0">Today's IPOs</h2>
+            <button class="btn btn-primary" id="fetchBtn">Fetch today's IPOs</button>
+          </div>
+          <div class="note muted" id="fetchNote">Fetch to see which open IPOs are above 20% GMP.</div>
+          <div class="table-wrap" id="ipoTable" hidden><table>
+            <thead><tr><th>IPO</th><th>GMP</th><th>Min amount</th><th>Closes</th><th>Booked</th></tr></thead>
+            <tbody id="ipoRows"></tbody>
+          </table></div>
+        </div>
+
+        <div class="card" id="composeCard" hidden>
+          <div class="row" style="justify-content:space-between;margin-bottom:10px">
+            <h2 style="margin:0">Message</h2>
+            <button class="btn btn-ghost btn-sm" id="newLine" hidden>🎲 Another funny line</button>
+          </div>
+          <textarea class="input" id="msg" rows="14"></textarea>
+          <div class="hint" style="margin-top:6px">{name} becomes each friend's first name when sending from PC. You can edit the text before sending.</div>
+
+          <div class="send-box">
+            <div class="send-opt">
+              <h3>💻 Send from PC</h3>
+              <p>Automatic, one by one, with each friend's name. Your PC must be on with the sender running.</p>
+              <button class="btn btn-primary" id="sendPc">Send to all</button>
+              <div class="progress" id="prog" hidden><div></div></div>
+              <div class="note muted" id="pcNote"></div>
+            </div>
+            <div class="send-opt">
+              <h3>📱 Send from phone</h3>
+              <p>Copy, then paste into your WhatsApp broadcast list. Same text for everyone ("Good morning!").</p>
+              <button class="btn btn-wa" id="copyBtn">1. Copy message</button>
+              <a class="btn btn-ghost" id="openWa" href="whatsapp://" >2. Open WhatsApp</a>
+              <button class="btn btn-ghost" id="phoneDone">3. I've sent it</button>
+              <div class="note muted" id="phoneNote"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Subscribers <span class="muted" id="subCount"></span></h2>
+          <div class="table-wrap"><table>
+            <thead><tr><th>Name</th><th>Number</th><th>Status</th><th>Joined</th><th>Last alert</th><th></th></tr></thead>
+            <tbody id="subRows"><tr><td colspan="6" class="muted">Loading…</td></tr></tbody>
+          </table></div>
+        </div>
+      </div>
+
+      <div class="stack">
+        <div class="card" id="qrCard" hidden>
+          <h2>Connect WhatsApp</h2>
+          <p class="muted">The PC sender needs a scan. On the phone you send from: WhatsApp → Settings → Linked devices → Link a device.</p>
+          <div class="qr"><img id="qrImg" alt="WhatsApp login QR code"></div>
+        </div>
+
+        <div class="card">
+          <h2>📱 Broadcast list to-do</h2>
+          <p class="muted" style="margin-bottom:8px">For sending from your phone. Ask new friends to save your number, or broadcast messages won't reach them.</p>
+          <div id="bcAdd"></div>
+          <div id="bcRemove"></div>
+        </div>
+
+        <div class="card">
+          <h2>Recent sends</h2>
+          <div class="table-wrap"><table>
+            <thead><tr><th>When</th><th>How</th><th>IPOs</th><th>Result</th></tr></thead>
+            <tbody id="histRows"><tr><td colspan="4" class="muted">Loading…</td></tr></tbody>
+          </table></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="js/config.js"></script>
+<script src="js/templates.js"></script>
+<script src="js/ipo.js"></script>
+<script src="js/admin.js"></script>
+</body>
+</html>

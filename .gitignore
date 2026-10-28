@@ -1,0 +1,4 @@
+node_modules/
+sender/.env
+sender/.wwebjs_auth/
+sender/.wwebjs_cache/

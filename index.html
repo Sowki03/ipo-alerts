@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IPO Pulse — Daily 20%+ GMP IPO Alerts</title>
+<meta name="description" content="Get a free WhatsApp alert with every open IPO trading above 20% GMP — price, lot, minimum amount and closing date.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f7f8f5; --surface:#ffffff; --surface-2:#eef2ec; --text:#111a14; --muted:#5b6b60;
+  --line:#dde4dc; --brand:#0f8a4b; --brand-ink:#ffffff; --brand-soft:#e2f4e9; --accent:#f5b400;
+  --danger:#c0392b; --wa:#25d366; --shadow:0 10px 30px rgba(17,26,20,.08);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0c110e; --surface:#141b17; --surface-2:#1b241f; --text:#e8efe9; --muted:#97a69c;
+    --line:#26322b; --brand:#2fbf71; --brand-ink:#05140b; --brand-soft:#173323; --accent:#ffc83d;
+    --danger:#ff7a6b; --shadow:0 10px 30px rgba(0,0,0,.4);
+  }
+}
+*{box-sizing:border-box;margin:0}
+html{scroll-behavior:smooth}
+body{font-family:Inter,system-ui,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--text);line-height:1.55;-webkit-font-smoothing:antialiased}
+a{color:var(--brand)}
+.wrap{max-width:1120px;margin:0 auto;padding:0 20px}
+
+/* nav */
+nav{position:sticky;top:0;z-index:10;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+nav .wrap{display:flex;align-items:center;justify-content:space-between;height:62px}
+.logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:19px;text-decoration:none;color:var(--text)}
+.logo-mark{width:32px;height:32px;border-radius:9px;background:var(--brand);display:grid;place-items:center}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:12px;font:600 15px Inter,sans-serif;padding:12px 18px;cursor:pointer;text-decoration:none;transition:transform .15s,filter .15s}
+.btn:hover{filter:brightness(1.05);transform:translateY(-1px)}
+.btn-primary{background:var(--brand);color:var(--brand-ink)}
+.btn-ghost{background:transparent;color:var(--text);border:1px solid var(--line)}
+
+/* hero */
+.hero{padding:64px 0 48px}
+.hero .wrap{display:grid;grid-template-columns:1.1fr .9fr;gap:48px;align-items:start}
+.pill{display:inline-flex;align-items:center;gap:8px;background:var(--brand-soft);color:var(--brand);font-weight:600;font-size:13px;padding:6px 12px;border-radius:999px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--brand);animation:pulse 1.6s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--brand) 60%,transparent)}100%{box-shadow:0 0 0 10px transparent}}
+h1{font-size:clamp(34px,5vw,54px);line-height:1.08;letter-spacing:-.03em;margin:18px 0 16px;font-weight:800}
+h1 em{font-style:normal;color:var(--brand)}
+.lead{font-size:18px;color:var(--muted);max-width:540px}
+.ticks{list-style:none;padding:0;margin:26px 0 0;display:grid;gap:10px}
+.ticks li{display:flex;gap:10px;align-items:flex-start}
+.ticks svg{flex:none;margin-top:3px}
+.stats{display:flex;gap:28px;margin-top:32px;flex-wrap:wrap}
+.stat b{display:block;font-size:26px;font-weight:800;letter-spacing:-.02em}
+.stat span{font-size:13px;color:var(--muted)}
+
+/* form card */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow)}
+.form-card{padding:28px}
+.form-card h2{font-size:22px;letter-spacing:-.01em}
+.form-card p.small{color:var(--muted);font-size:14px;margin-top:4px}
+form{display:grid;gap:14px;margin-top:20px}
+label.f{display:grid;gap:6px;font-size:14px;font-weight:600}
+.opt{font-weight:400;color:var(--muted)}
+.input{display:flex;align-items:center;border:1px solid var(--line);border-radius:12px;background:var(--bg);overflow:hidden;transition:border-color .15s,box-shadow .15s}
+.input:focus-within{border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-soft)}
+.input span{padding:0 0 0 14px;color:var(--muted);font-weight:600}
+.input input{flex:1;border:0;background:transparent;color:var(--text);font:16px Inter,sans-serif;padding:13px 14px;outline:none;min-width:0}
+.channels{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.chip{position:relative}
+.chip input{position:absolute;opacity:0}
+.chip label{display:flex;align-items:center;gap:8px;justify-content:center;border:1px solid var(--line);border-radius:12px;padding:11px;font-weight:600;font-size:14px;cursor:pointer;background:var(--bg);transition:.15s}
+.chip input:checked + label{border-color:var(--brand);background:var(--brand-soft);color:var(--brand)}
+.chip input:focus-visible + label{box-shadow:0 0 0 3px var(--brand-soft)}
+.consent{display:flex;gap:10px;font-size:13px;color:var(--muted);align-items:flex-start}
+.consent input{margin-top:3px;accent-color:var(--brand);width:16px;height:16px;flex:none}
+.hp{position:absolute;left:-9999px}
+.msg{font-size:14px;font-weight:500;min-height:1px}
+.msg.err{color:var(--danger)}
+.success{display:none;text-align:center;padding:12px 0}
+.success .big{width:64px;height:64px;border-radius:50%;background:var(--brand-soft);display:grid;place-items:center;margin:0 auto 14px}
+.success h3{font-size:22px}
+.success p{color:var(--muted);margin-top:6px}
+
+/* sections */
+section{padding:56px 0}
+.sec-head{display:flex;justify-content:space-between;align-items:end;gap:16px;flex-wrap:wrap;margin-bottom:24px}
+.sec-head h2{font-size:clamp(26px,3.4vw,36px);letter-spacing:-.02em}
+.sec-head p{color:var(--muted)}
+.updated{font-size:13px;color:var(--muted)}
+
+/* live list */
+.ipo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+.ipo{padding:20px;display:grid;gap:14px}
+.ipo-top{display:flex;justify-content:space-between;gap:10px;align-items:start}
+.ipo h3{font-size:17px;line-height:1.3}
+.tag{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:3px 8px;border-radius:6px;background:var(--surface-2);color:var(--muted);white-space:nowrap}
+.tag.today{background:color-mix(in srgb,var(--danger) 15%,transparent);color:var(--danger)}
+.tag.tom{background:color-mix(in srgb,var(--accent) 22%,transparent);color:color-mix(in srgb,var(--accent) 55%,var(--text))}
+.gmp{display:flex;align-items:baseline;gap:8px}
+.gmp b{font-size:28px;font-weight:800;color:var(--brand);letter-spacing:-.02em}
+.gmp span{color:var(--muted);font-size:14px}
+.kv{display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;font-size:14px}
+.kv div span{display:block;color:var(--muted);font-size:12px}
+.kv div b{font-weight:600}
+.skeleton{height:190px;border-radius:20px;background:linear-gradient(90deg,var(--surface) 0%,var(--surface-2) 50%,var(--surface) 100%);background-size:200% 100%;animation:sh 1.3s infinite;border:1px solid var(--line)}
+@keyframes sh{to{background-position:-200% 0}}
+.empty{padding:32px;text-align:center;color:var(--muted)}
+
+/* how */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.step{padding:24px}
+.step .n{width:36px;height:36px;border-radius:10px;background:var(--brand-soft);color:var(--brand);font-weight:800;display:grid;place-items:center;margin-bottom:14px}
+.step h3{font-size:18px;margin-bottom:6px}
+.step p{color:var(--muted);font-size:15px}
+
+/* preview */
+.preview .wrap{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center}
+.phone{max-width:360px;margin:0 auto;border-radius:34px;padding:12px;background:#111;box-shadow:var(--shadow)}
+.screen{border-radius:24px;overflow:hidden;background:#e5ddd5}
+.wa-head{background:#075e54;color:#fff;padding:12px 14px;display:flex;align-items:center;gap:10px;font-size:14px}
+.wa-head .av{width:32px;height:32px;border-radius:50%;background:var(--brand);display:grid;place-items:center}
+.wa-head small{display:block;opacity:.75;font-size:11px}
+.chat{padding:14px;min-height:380px}
+.bubble{background:#fff;color:#111;border-radius:0 10px 10px 10px;padding:10px 12px 18px;font-size:13px;line-height:1.5;position:relative;max-width:95%;box-shadow:0 1px 1px rgba(0,0,0,.1);white-space:pre-line}
+.bubble time{position:absolute;right:10px;bottom:4px;font-size:10px;color:#888}
+
+/* faq */
+.faq{display:grid;gap:10px;max-width:780px}
+details{padding:18px 20px}
+summary{cursor:pointer;font-weight:600;list-style:none;display:flex;justify-content:space-between;gap:12px}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";font-size:20px;color:var(--muted);line-height:1}
+details[open] summary::after{content:"–"}
+details p{color:var(--muted);margin-top:10px;font-size:15px}
+
+/* cta + footer */
+.cta{padding:44px;text-align:center;background:var(--brand);color:var(--brand-ink);border:0}
+.cta h2{font-size:clamp(24px,3vw,34px);letter-spacing:-.02em}
+.cta p{opacity:.85;margin:8px 0 22px}
+.cta .btn{background:var(--brand-ink);color:var(--brand)}
+footer{border-top:1px solid var(--line);padding:32px 0 48px;color:var(--muted);font-size:13px}
+footer .disc{max-width:860px;margin-top:10px}
+
+@media (max-width:900px){
+  .hero .wrap,.preview .wrap{grid-template-columns:1fr}
+  .steps{grid-template-columns:1fr}
+  .hero{padding-top:40px}
+}
+@media (max-width:480px){
+  .wrap{padding:0 16px}
+  .form-card{padding:22px}
+  .cta{padding:32px 20px}
+  nav .btn{padding:10px 14px;font-size:14px}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <a class="logo" href="#">
+      <span class="logo-mark"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="15 7 21 7 21 13"/></svg></span>
+      IPO Pulse
+    </a>
+    <a class="btn btn-primary" href="#join">Get free alerts</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap">
+    <div>
+      <span class="pill"><span class="dot"></span>Free IPO alerts on WhatsApp</span>
+      <h1>Only the IPOs with <em>20%+ GMP</em>. Every morning on WhatsApp.</h1>
+      <p class="lead">No noise, no tips channels, no spam. One short message each day listing the open IPOs whose grey market premium is above 20%, sorted by closing date so you never miss a deadline.</p>
+      <ul class="ticks">
+        <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Price, lot size and the minimum amount you need</li>
+        <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Live GMP, expected listing price and subscription status</li>
+        <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>"Closing today" flagged first — last chance to apply</li>
+      </ul>
+      <div class="stats">
+        <div class="stat"><b>20%+</b><span>GMP filter</span></div>
+        <div class="stat"><b>1 msg</b><span>per day, max</span></div>
+        <div class="stat"><b>₹0</b><span>always free</span></div>
+      </div>
+    </div>
+
+    <div class="card form-card" id="join">
+      <div id="formView">
+        <h2>Join the IPO Pulse list</h2>
+        <p class="small">Takes 10 seconds. Reply STOP anytime to unsubscribe.</p>
+        <form id="subForm" novalidate>
+          <label class="f"><span>Your name <span class="opt">(optional)</span></span>
+            <div class="input"><input name="name" autocomplete="name" placeholder="Rahul Sharma" maxlength="60"></div>
+          </label>
+          <label class="f">WhatsApp number
+            <div class="input"><span>+91</span><input name="phone" type="tel" inputmode="numeric" autocomplete="tel-national" placeholder="98765 43210" maxlength="14" required></div>
+          </label>
+          <label class="f"><span>Email <span class="opt">(optional)</span></span>
+            <div class="input"><input name="email" type="email" autocomplete="email" placeholder="you@example.com"></div>
+          </label>
+          <input class="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+          <label class="consent"><input type="checkbox" name="consent" required>
+            <span>I agree to receive IPO alerts on WhatsApp. I understand this is information only, not investment advice, and I can unsubscribe anytime.</span>
+          </label>
+          <div class="msg" id="formMsg" role="alert"></div>
+          <button class="btn btn-primary" type="submit" id="subBtn" style="width:100%;padding:15px">Subscribe — it's free</button>
+        </form>
+      </div>
+      <div class="success" id="successView">
+        <div class="big"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <h3 id="successTitle">You're in!</h3>
+        <p id="successText">Your first IPO alert arrives on WhatsApp in the morning.</p>
+        <p style="font-size:13px;margin-top:14px">Tip: save Sowki's number (+91 72070 21603) so the alerts always reach you.</p>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section id="live">
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <h2>Today's 20%+ GMP IPOs</h2>
+        <p>This is exactly what lands in your WhatsApp each morning.</p>
+      </div>
+      <div class="updated" id="updated">Loading live data…</div>
+    </div>
+    <div class="ipo-grid" id="ipoGrid">
+      <div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-head"><h2>How it works</h2></div>
+    <div class="steps">
+      <div class="card step"><div class="n">1</div><h3>Subscribe</h3><p>Drop your WhatsApp number (and email if you like). No app, no login, no payment.</p></div>
+      <div class="card step"><div class="n">2</div><h3>We scan the market</h3><p>Every morning we check every open IPO and keep only the ones trading above 20% grey market premium.</p></div>
+      <div class="card step"><div class="n">3</div><h3>You get one message</h3><p>Sorted by closing date with the minimum amount needed. Decide in 30 seconds, apply on your own broker or bank app.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="preview">
+  <div class="wrap">
+    <div>
+      <div class="sec-head" style="margin-bottom:12px"><h2>Short, clear, done.</h2></div>
+      <p style="color:var(--muted);font-size:17px;max-width:460px">One message, readable in under a minute. The IPOs closing soonest come first. On days with nothing above 20%, we tell you that too, so you know you're not missing out.</p>
+      <a class="btn btn-primary" href="#join" style="margin-top:22px">Get tomorrow's alert</a>
+    </div>
+    <div class="phone" aria-hidden="true">
+      <div class="screen">
+        <div class="wa-head"><div class="av"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 9 11 13 15 21 7"/></svg></div><div>IPO Pulse<small>Daily alerts</small></div></div>
+        <div class="chat"><div class="bubble" id="bubble"><b>☀️ Good morning Rahul!</b>
+Today's hot IPOs 👇
+
+⏰ <b>Last day today!</b>
+<b>Rentomojo</b>
+💰 You need ₹14,948 to apply
+📈 If it lists the way the market expects, you could make ~₹4,884 (33%)
+👥 8 people fighting for every 1 share 🍀
+
+📅 <b>Closes tomorrow</b>
+<b>LCC Projects</b>
+💰 You need ₹14,892 to apply
+📈 If it lists the way the market expects, you could make ~₹5,100 (34%)
+👥 Not even fully booked yet, good chances of getting it 🍀
+
+<i>⚠️ IPO investments are subject to market risks. Expected gains are not guaranteed.</i><time>9:00 AM</time></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-head"><h2>Questions</h2></div>
+    <div class="faq">
+      <details class="card"><summary>What is GMP?</summary><p>Grey Market Premium is the unofficial premium an IPO trades at before it lists. A 20% GMP on a ₹100 issue suggests the market expects it to list around ₹120. It's a sentiment signal, not a guarantee — listings can go either way.</p></details>
+      <details class="card"><summary>Is it really free?</summary><p>Yes. One alert a day, no hidden plan. We'll only ever add optional extras later.</p></details>
+      <details class="card"><summary>How do I stop the messages?</summary><p>Reply STOP on WhatsApp, or use the <a href="unsubscribe.html">unsubscribe page</a>. You're removed right away.</p></details>
+      <details class="card"><summary>Do you apply for IPOs on my behalf?</summary><p>No. We never ask for your PAN, bank or demat details. You apply yourself through your broker or bank's UPI/ASBA.</p></details>
+      <details class="card"><summary>What do you do with my number?</summary><p>We use it only to send these alerts. We never sell or share it. Ask us to delete it any time.</p></details>
+    </div>
+  </div>
+</section>
+
+<section style="padding-top:8px">
+  <div class="wrap">
+    <div class="card cta">
+      <h2>Stop chasing GMP on ten Telegram groups.</h2>
+      <p>One trusted morning message. That's it.</p>
+      <a class="btn" href="#join">Subscribe free</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div><b style="color:var(--text)">IPO Pulse</b> · © <span id="yr"></span> · <a href="unsubscribe.html">Unsubscribe</a></div>
+    <p class="disc">Disclaimer: IPO Pulse shares publicly available market information for educational purposes only. We are not SEBI-registered investment advisers or research analysts, and nothing here is a recommendation to buy, sell or apply for any security. Grey market premium (GMP) is unofficial and can change rapidly. Investments in securities are subject to market risks; read the offer document carefully and consult a registered adviser before investing.</p>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="js/config.js"></script>
+<script src="js/templates.js"></script>
+<script src="js/ipo.js"></script>
+<script>
+document.getElementById("yr").textContent = new Date().getFullYear();
+
+// --- Live hot IPOs ---
+const inr = n => "₹" + Math.round(n).toLocaleString("en-IN");
+const fmtDate = s => new Date(s + "T00:00:00").toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+async function loadIPOs() {
+  const grid = document.getElementById("ipoGrid"), upd = document.getElementById("updated");
+  try {
+    const { all, hot, fetchedAt } = await fetchOpenIPOs();
+    const today = istDate(), tom = istDate(new Date(Date.now() + 864e5));
+    upd.textContent = `${hot.length} of ${all.length} open IPOs · updated ${fetchedAt.toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" })}`;
+    if (!hot.length) {
+      grid.innerHTML = `<div class="card empty" style="grid-column:1/-1">No open IPO is above 20% GMP right now. Subscribers get a heads-up the moment one is.</div>`;
+      return;
+    }
+    grid.innerHTML = hot.map(i => {
+      const tag = i.close === today ? `<span class="tag today">Closes today</span>`
+        : i.close === tom ? `<span class="tag tom">Closes tomorrow</span>`
+        : `<span class="tag">Closes ${fmtDate(i.close)}</span>`;
+      return `<article class="card ipo">
+        <div class="ipo-top"><h3>${esc(i.name)}</h3>${tag}</div>
+        <div class="gmp"><b>+${i.pct.toFixed(1)}%</b><span>GMP ₹${i.gmp}</span></div>
+        <div class="kv">
+          <div><span>Price</span><b>₹${i.price}</b></div>
+          <div><span>Min amount</span><b>${i.minInvest ? inr(i.minInvest) : "-"}</b></div>
+          <div><span>Est. listing</span><b>${i.estListing ? "₹" + i.estListing : "-"}</b></div>
+          <div><span>Subscribed</span><b>${esc(i.sub)}</b></div>
+        </div>
+      </article>`;
+    }).join("");
+  } catch (e) {
+    upd.textContent = "";
+    grid.innerHTML = `<div class="card empty" style="grid-column:1/-1">Live data is taking a break. Subscribe and get it straight on WhatsApp.</div>`;
+  }
+}
+loadIPOs();
+
+// --- Subscribe ---
+const form = document.getElementById("subForm"), msg = document.getElementById("formMsg"), btn = document.getElementById("subBtn");
+const phoneInput = form.phone;
+phoneInput.addEventListener("input", () => { phoneInput.value = phoneInput.value.replace(/[^\d ]/g, ""); });
+
+form.addEventListener("submit", async e => {
+  e.preventDefault();
+  msg.className = "msg"; msg.textContent = "";
+  const digits = phoneInput.value.replace(/\D/g, "").replace(/^(91|0)(?=\d{10}$)/, "");
+  const fail = t => { msg.className = "msg err"; msg.textContent = t; };
+  if (form.website.value) return; // bots fill the hidden field
+  if (!/^[6-9]\d{9}$/.test(digits)) return fail("Enter a valid 10-digit mobile number.");
+  if (!form.consent.checked) return fail("Please tick the consent box to continue.");
+  if (!sb) return fail("Sign-ups aren't open yet. Please try again later.");
+
+  btn.disabled = true; btn.textContent = "Subscribing…";
+  try {
+    const { data, error } = await sb.rpc("subscribe", { p_name: form.name.value, p_phone: digits, p_email: form.email.value });
+    if (error) throw new Error(error.message);
+    const first = form.name.value.trim().split(" ")[0];
+    document.getElementById("successTitle").textContent =
+      data === "updated" ? "You're already in!" : data === "resubscribed" ? `Welcome back${first ? ", " + first : ""}!` : `You're in${first ? ", " + first : ""}!`;
+    document.getElementById("formView").style.display = "none";
+    document.getElementById("successView").style.display = "block";
+  } catch (err) {
+    fail(err.message);
+  } finally {
+    btn.disabled = false; btn.textContent = "Subscribe — it's free";
+  }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+{
+  "name": "ipo-alerts-sender",
+  "private": true,
+  "type": "module",
+  "description": "PC sender for IPO Alerts: sends queued WhatsApp messages from Supabase",
+  "scripts": {
+    "start": "node --env-file=.env sender.js"
+  },
+  "dependencies": {
+    "qrcode": "^1.5.4",
+    "qrcode-terminal": "^0.12.0",
+    "whatsapp-web.js": "^1.34.7"
+  }
+}

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Unsubscribe — IPO Pulse</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<div class="wrap narrow">
+  <p style="margin:20px 0 28px"><a href="./">← IPO Pulse</a></p>
+  <div class="card">
+    <h1>Unsubscribe</h1>
+    <p class="muted" style="margin:6px 0 18px">Enter the WhatsApp number you signed up with and you won't get any more IPO alerts.</p>
+    <form id="f" class="stack" novalidate>
+      <label class="f">WhatsApp number
+        <input class="input" name="phone" type="tel" inputmode="numeric" placeholder="98765 43210" maxlength="14" required>
+      </label>
+      <button class="btn btn-primary" id="btn" type="submit">Unsubscribe me</button>
+      <div class="note" id="note" role="alert"></div>
+    </form>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="js/config.js"></script>
+<script>
+const f = document.getElementById("f"), note = document.getElementById("note"), btn = document.getElementById("btn");
+f.addEventListener("submit", async e => {
+  e.preventDefault();
+  const digits = f.phone.value.replace(/\D/g, "").replace(/^(91|0)(?=\d{10}$)/, "");
+  const show = (t, cls) => { note.className = "note " + cls; note.textContent = t; };
+  if (!/^[6-9]\d{9}$/.test(digits)) return show("Enter a valid 10-digit mobile number.", "err");
+  if (!sb) return show("This isn't set up yet. Reply STOP on WhatsApp instead.", "err");
+  btn.disabled = true;
+  const { data, error } = await sb.rpc("unsubscribe", { p_phone: digits });
+  btn.disabled = false;
+  if (error) return show(error.message, "err");
+  show(data === "unsubscribed" ? "Done. You won't get any more IPO alerts. Changed your mind? Just sign up again." : "That number isn't on the list, so there's nothing to stop.", "ok");
+});
+</script>
+</body>
+</html>
