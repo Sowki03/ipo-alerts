@@ -80,6 +80,9 @@ label.f{display:grid;gap:6px;font-size:14px;font-weight:600}
 .success .big{width:64px;height:64px;border-radius:50%;background:var(--brand-soft);display:grid;place-items:center;margin:0 auto 14px}
 .success h3{font-size:22px}
 .success p{color:var(--muted);margin-top:6px}
+.success .after{border-top:1px solid var(--line);margin-top:20px;padding-top:16px;display:grid;gap:8px;justify-items:center}
+.success .after p{color:var(--text);font-weight:500;font-size:14px;margin:0}
+.success .after .btn{width:100%;max-width:280px}
 
 /* sections */
 section{padding:56px 0}
@@ -193,12 +196,9 @@ footer .disc{max-width:860px;margin-top:10px}
             <div class="input"><input name="name" autocomplete="name" placeholder="Rahul Sharma" maxlength="60"></div>
           </label>
           <label class="f">WhatsApp number
-            <div class="input"><span>+91</span><input name="phone" type="tel" inputmode="numeric" autocomplete="tel-national" placeholder="98765 43210" maxlength="14" required></div>
+            <div class="input"><span>+91</span><input name="phone" type="tel" inputmode="numeric" autocomplete="tel-national" placeholder="98765 43210" maxlength="20" required></div>
           </label>
-          <label class="f"><span>Email <span class="opt">(optional)</span></span>
-            <div class="input"><input name="email" type="email" autocomplete="email" placeholder="you@example.com"></div>
-          </label>
-          <input class="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+          <input class="hp" name="hp_check" tabindex="-1" autocomplete="off" aria-hidden="true">
           <label class="consent"><input type="checkbox" name="consent" required>
             <span>I agree to receive IPO alerts on WhatsApp. I understand this is information only, not investment advice, and I can unsubscribe anytime.</span>
           </label>
@@ -208,9 +208,15 @@ footer .disc{max-width:860px;margin-top:10px}
       </div>
       <div class="success" id="successView">
         <div class="big"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
-        <h3 id="successTitle">You're in!</h3>
+        <h3 id="successTitle">Successfully subscribed 🎉</h3>
         <p id="successText">Your first IPO alert arrives on WhatsApp in the morning.</p>
         <p style="font-size:13px;margin-top:14px">Tip: save Sowki's number (+91 72070 21603) so the alerts always reach you.</p>
+        <div class="after">
+          <p>👨‍👩‍👧 Want your family or close ones to get these too?</p>
+          <button class="btn btn-ghost" type="button" id="againBtn">Add their number</button>
+          <p style="margin-top:14px">📣 Know someone who chases IPOs?</p>
+          <button class="btn btn-primary" type="button" id="shareBtn">Share with friends</button>
+        </div>
       </div>
     </div>
   </div>
@@ -235,7 +241,7 @@ footer .disc{max-width:860px;margin-top:10px}
   <div class="wrap">
     <div class="sec-head"><h2>How it works</h2></div>
     <div class="steps">
-      <div class="card step"><div class="n">1</div><h3>Subscribe</h3><p>Drop your WhatsApp number (and email if you like). No app, no login, no payment.</p></div>
+      <div class="card step"><div class="n">1</div><h3>Subscribe</h3><p>Drop your WhatsApp number. No app, no login, no payment.</p></div>
       <div class="card step"><div class="n">2</div><h3>We scan the market</h3><p>Every morning we check every open IPO and keep only the ones trading above 20% grey market premium.</p></div>
       <div class="card step"><div class="n">3</div><h3>You get one message</h3><p>Sorted by closing date with the minimum amount needed. Decide in 30 seconds, apply on your own broker or bank app.</p></div>
     </div>
@@ -357,25 +363,62 @@ form.addEventListener("submit", async e => {
   msg.className = "msg"; msg.textContent = "";
   const digits = phoneInput.value.replace(/\D/g, "").replace(/^(91|0)(?=\d{10}$)/, "");
   const fail = t => { msg.className = "msg err"; msg.textContent = t; };
-  if (form.website.value) return; // bots fill the hidden field
+  if (form.hp_check.value) return; // bots fill the hidden field
   if (!/^[6-9]\d{9}$/.test(digits)) return fail("Enter a valid 10-digit mobile number.");
   if (!form.consent.checked) return fail("Please tick the consent box to continue.");
   if (!sb) return fail("Sign-ups aren't open yet. Please try again later.");
 
   btn.disabled = true; btn.textContent = "Subscribing…";
   try {
-    const { data, error } = await sb.rpc("subscribe", { p_name: form.name.value, p_phone: digits, p_email: form.email.value });
+    const { data, error } = await sb.rpc("subscribe", { p_name: form.name.value, p_phone: digits, p_email: "" });
     if (error) throw new Error(error.message);
-    const first = form.name.value.trim().split(" ")[0];
-    document.getElementById("successTitle").textContent =
-      data === "updated" ? "You're already in!" : data === "resubscribed" ? `Welcome back${first ? ", " + first : ""}!` : `You're in${first ? ", " + first : ""}!`;
+    if (data === "updated") return alreadyRegistered();
     document.getElementById("formView").style.display = "none";
     document.getElementById("successView").style.display = "block";
   } catch (err) {
-    fail(err.message);
+    fail(/fetch|network/i.test(err.message) ? "Couldn't reach the server. Check your internet and try again." : err.message);
   } finally {
-    btn.disabled = false; btn.textContent = "Subscribe — it's free";
+    if (!resetTimer) { btn.disabled = false; btn.textContent = "Subscribe — it's free"; }
   }
+});
+
+// Number already on the list: sarcastic message, then a fresh form after 5 seconds
+const ALREADY = [
+  "Déjà vu! 👀 This number is already registered. We heard you the first time.",
+  "This number is already registered. Subscribing twice won't get you double the IPOs 😏",
+  "Already registered! Our database has a better memory than you 🧠",
+  "Nice try 😄 This number is already on the list. One alert per person is plenty.",
+];
+let resetTimer = null;
+function alreadyRegistered() {
+  const text = ALREADY[Math.floor(Math.random() * ALREADY.length)];
+  let left = 5;
+  const show = () => { msg.className = "msg err"; msg.textContent = `${text} (Clearing the form in ${left}s…)`; };
+  show();
+  btn.disabled = true; btn.textContent = "Already registered";
+  resetTimer = setInterval(() => {
+    if (--left > 0) return show();
+    clearInterval(resetTimer); resetTimer = null;
+    resetForm();
+  }, 1000);
+}
+
+function resetForm() {
+  form.reset(); msg.className = "msg"; msg.textContent = "";
+  btn.disabled = false; btn.textContent = "Subscribe — it's free";
+  document.getElementById("successView").style.display = "none";
+  document.getElementById("formView").style.display = "block";
+}
+
+// After subscribing: add a family member's number, or share the page
+document.getElementById("againBtn").addEventListener("click", () => { resetForm(); form.phone.focus(); });
+const SHARE_URL = "https://sowki03.github.io/ipo-alerts/";
+const SHARE_TEXT = "I get a free WhatsApp alert every morning with the IPOs actually worth applying for 📈 Join here:";
+document.getElementById("shareBtn").addEventListener("click", async () => {
+  if (navigator.share) {
+    try { await navigator.share({ title: "IPO Pulse", text: SHARE_TEXT, url: SHARE_URL }); return; } catch (e) { if (e.name === "AbortError") return; }
+  }
+  window.open("https://wa.me/?text=" + encodeURIComponent(`${SHARE_TEXT} ${SHARE_URL}`), "_blank");
 });
 </script>
 </body>
