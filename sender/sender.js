@@ -43,8 +43,8 @@ function fillName(message, name) {
   return first ? message.replaceAll("{name}", first) : message.replaceAll(" {name}", "").replaceAll("{name}", "");
 }
 const WELCOME = `👋 *Hey {name}!* You're on Sowki's IPO alert list now 🎉\n\n` +
-  `Whenever an IPO is worth a look, you'll get a short morning message with how much you need to apply and what you could make.\n\n` +
-  `_Reply *STOP* anytime to unsubscribe._`;
+  `Whenever an IPO is worth a look, you'll get a short morning message with how much you need to apply and what you could make.`;
+// (WELCOME is also in js/admin.js for "Send from phone": keep the two in sync)
 const STOPPED = `✌️ Done! You won't get any more IPO alerts. Reply *START* anytime to come back.`;
 const RESTARTED = `👋 Welcome back! IPO alerts are on again.`;
 
@@ -191,11 +191,12 @@ async function sendWelcomes() {
     const r = await sendTo(s.phone, fillName(WELCOME, s.name));
     if (!r.ok && r.reason !== "Number not on WhatsApp") {
       // connection problem (PC slept etc.): leave it pending so it goes out once WhatsApp is back
-      await patch("subscribers", `id=eq.${s.id}`, { last_error: r.reason });
+      await patch("subscribers", `id=eq.${s.id}`, { last_error: `welcome: ${r.reason}` });
       log(`Welcome for ${s.phone} will be retried - ${r.reason}`);
       return;
     }
-    await patch("subscribers", `id=eq.${s.id}`, { welcomed_at: new Date().toISOString(), last_error: r.ok ? null : r.reason });
+    // "welcome:" errors show up in the admin page's "Welcome not received" list
+    await patch("subscribers", `id=eq.${s.id}`, { welcomed_at: new Date().toISOString(), last_error: r.ok ? null : `welcome: ${r.reason}` });
     log(`Welcome ${r.ok ? "sent to" : "failed for"} ${s.phone}${r.ok ? "" : " - " + r.reason}`);
     await sleep(3000 + Math.random() * 3000);
   }

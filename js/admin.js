@@ -57,6 +57,7 @@ async function loadSender() {
   else { b.className = "badge warn"; b.lastElementChild.textContent = s.wa_state === "qr" ? "PC sender: scan QR" : `PC sender: ${s.wa_state}`; }
   $("qrCard").hidden = !(online && s.wa_state === "qr" && s.qr);
   if (online && s.qr) $("qrImg").src = s.qr;
+  renderWelcome();
   updateSendButtons();
 }
 
@@ -172,8 +173,54 @@ async function loadSubs() {
     : `<p class="note ok">Everyone active is in your broadcast list ✓</p>`;
   $("bcRemove").innerHTML = toRemove.length
     ? `<div class="hint" style="margin:14px 0 6px">Remove from broadcast list (${toRemove.length})</div>` + toRemove.map(s => bcItem(s, "remove")).join("") : "";
+  renderWelcome();
   updateSendButtons();
 }
+
+// ---------- Welcome not received ----------
+// Same text the PC sender uses (sender/sender.js WELCOME): keep the two in sync
+const WELCOME = `👋 *Hey {name}!* You're on Sowki's IPO alert list now 🎉\n\n` +
+  `Whenever an IPO is worth a look, you'll get a short morning message with how much you need to apply and what you could make.`;
+const welcomeError = s => (s.last_error || "").startsWith("welcome:") ? s.last_error.slice(8).trim() : "";
+const notOnWa = s => welcomeError(s) === "Number not on WhatsApp";
+
+function renderWelcome() {
+  const list = state.subs.filter(s => s.status === "active" && (!s.welcomed_at || welcomeError(s)));
+  const retryable = list.filter(s => s.welcomed_at && !notOnWa(s));
+  $("welCount").textContent = list.length ? `(${list.length})` : "";
+  $("welAllPc").hidden = !(state.senderOnline && retryable.length > 1);
+  $("welList").innerHTML = list.length ? list.map(s => {
+    const waiting = !s.welcomed_at;
+    const why = welcomeError(s);
+    const status = notOnWa(s) ? "❌ This number isn't on WhatsApp"
+      : waiting ? (state.senderOnline ? "⏳ Sending in a few seconds…" : "⏳ Waiting: goes out when the PC sender is on")
+      : `❌ Didn't go out${why ? `: ${esc(why)}` : ""}`;
+    const pcBtn = !waiting && !notOnWa(s)
+      ? `<button class="btn btn-primary btn-sm" data-welpc="${s.id}" ${state.senderOnline ? "" : "disabled title='PC sender is offline'"}>From PC</button>` : "";
+    const phoneBtn = notOnWa(s) ? ""
+      : `<a class="btn btn-ghost btn-sm" data-welphone="${s.id}" target="_blank" rel="noopener" href="https://wa.me/${s.phone}?text=${encodeURIComponent(fillName(WELCOME, s.name))}">From phone</a>`;
+    return `<div class="add-item"><div><b>${esc(s.name) || "No name"}</b><span class="muted">${fmtPhone(s.phone)}</span><div class="hint">${status}</div></div>
+      <div class="row">${pcBtn}${phoneBtn}<button class="btn btn-ghost btn-sm" data-weldone="${s.id}" title="Remove from this list">✕</button></div></div>`;
+  }).join("") : `<p class="note ok">Everyone has got their welcome ✓</p>`;
+}
+
+// From PC: put it back in the sender's queue (it checks every 5 seconds)
+async function queueWelcome(ids) {
+  await sb.from("subscribers").update({ welcomed_at: null, last_error: null }).in("id", ids);
+  loadSubs();
+  setTimeout(loadSubs, 10000 + ids.length * 6000); // check again once the sender has had time
+}
+$("welAllPc").onclick = () => queueWelcome(state.subs.filter(s => s.status === "active" && s.welcomed_at && welcomeError(s) && !notOnWa(s)).map(s => s.id));
+
+// From phone (WhatsApp opens with the text ready) or ✕: count it as done
+async function markWelcomed(id) {
+  await sb.from("subscribers").update({ welcomed_at: new Date().toISOString(), last_error: null }).eq("id", id);
+  loadSubs();
+}
+document.addEventListener("click", e => {
+  const a = e.target.closest("[data-welphone]");
+  if (a) setTimeout(() => markWelcomed(a.dataset.welphone), 500); // let the link open first
+});
 const bcItem = (s, kind) => `<div class="add-item"><div><b>${esc(s.name) || "No name"}</b><span class="muted">${fmtPhone(s.phone)}</span></div>
   <div class="row"><button class="btn btn-ghost btn-sm" data-copy="+${s.phone}">Copy</button>
   <button class="btn btn-primary btn-sm" data-bc="${s.id}" data-val="${kind === "add"}">${kind === "add" ? "Added ✓" : "Removed ✓"}</button></div></div>`;
@@ -182,6 +229,8 @@ document.addEventListener("click", async e => {
   const t = e.target.closest("button"); if (!t) return;
   if (t.dataset.copy) { await navigator.clipboard.writeText(t.dataset.copy).catch(() => {}); t.textContent = "Copied"; setTimeout(() => t.textContent = "Copy", 1500); }
   if (t.dataset.bc) { await sb.from("subscribers").update({ in_broadcast: t.dataset.val === "true" }).eq("id", t.dataset.bc); loadSubs(); }
+  if (t.dataset.welpc) { t.disabled = true; queueWelcome([t.dataset.welpc]); }
+  if (t.dataset.weldone) markWelcomed(t.dataset.weldone);
   if (t.dataset.toggle) {
     const s = state.subs.find(x => x.id === t.dataset.toggle);
     const stop = s.status === "active";
