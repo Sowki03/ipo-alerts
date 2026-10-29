@@ -50,7 +50,19 @@ const RESTARTED = `👋 Welcome back! IPO alerts are on again.`;
 
 // ---------- WhatsApp ----------
 const wa = { state: "starting", qr: null, number: "" };
-let client;
+let client, restarting = false;
+
+// Throw away the broken browser and log in again with the saved session (no QR needed)
+function restartWhatsApp(why) {
+  if (restarting) return;
+  restarting = true;
+  wa.state = "offline"; wa.number = "";
+  log(`Reconnecting WhatsApp (${why})`); heartbeat();
+  const old = client;
+  Promise.race([old?.destroy(), sleep(10000)]).catch(() => {}).finally(() => setTimeout(() => { restarting = false; startWhatsApp(); }, 3000));
+}
+// Errors that mean the hidden WhatsApp browser died (typically after the PC slept)
+const BROKEN = /detached Frame|Session closed|Target closed|Protocol error|Execution context was destroyed|browser has disconnected/i;
 
 function getChromePath() {
   const cands = [
@@ -77,8 +89,7 @@ function startWhatsApp() {
     // First login after a scan sometimes never fires "ready"; a restart picks up the saved session
     setTimeout(() => {
       if (wa.state !== "authenticating") return;
-      log("Stuck loading - restarting with the saved session");
-      client.destroy().catch(() => {}).finally(() => setTimeout(startWhatsApp, 3000));
+      restartWhatsApp("stuck loading after login");
     }, 90 * 1000);
   });
   client.on("ready", () => {
@@ -87,9 +98,7 @@ function startWhatsApp() {
   });
   client.on("auth_failure", m => { wa.state = "error"; log("Auth failure:", m); });
   client.on("disconnected", reason => {
-    wa.state = "offline"; wa.number = ""; log("Disconnected:", reason, "- restarting");
-    heartbeat();
-    client.destroy().catch(() => {}).finally(() => setTimeout(startWhatsApp, 3000));
+    restartWhatsApp(`disconnected: ${reason}`);
   });
   client.on("message", msg => {
     if (msg.from.endsWith("@c.us")) handleReply(msg.from.replace("@c.us", ""), msg.body || "").catch(e => log("reply:", e.message));
@@ -104,8 +113,28 @@ async function sendTo(phone, text) {
     if (!id) return { ok: false, reason: "Number not on WhatsApp" };
     await client.sendMessage(id._serialized, text);
     return { ok: true };
-  } catch (e) { return { ok: false, reason: e.message }; }
+  } catch (e) {
+    if (BROKEN.test(e.message)) { restartWhatsApp("connection broke while sending"); return { ok: false, reason: e.message, retry: true }; }
+    return { ok: false, reason: e.message };
+  }
 }
+
+const waitUntilReady = async (ms = 180000) => { for (let t = 0; t < ms && wa.state !== "ready"; t += 2000) await sleep(2000); return wa.state === "ready"; };
+
+// Every minute (and right after the PC wakes up), make sure WhatsApp still answers
+let lastBeat = Date.now();
+async function healthCheck() {
+  if (wa.state !== "ready" || restarting) return;
+  try {
+    const state = await Promise.race([client.getState(), sleep(15000).then(() => "TIMEOUT")]);
+    if (state !== "CONNECTED") restartWhatsApp(`health check: ${state}`);
+  } catch (e) { restartWhatsApp(`health check: ${e.message}`); }
+}
+setInterval(() => {
+  const gap = Date.now() - lastBeat; lastBeat = Date.now();
+  if (gap > 60000) { log(`PC was asleep for about ${Math.round(gap / 60000)} min`); healthCheck(); }
+}, 10000);
+setInterval(healthCheck, 60000);
 
 async function handleReply(phone, body) {
   const word = body.trim().toUpperCase();
@@ -143,7 +172,8 @@ async function runCampaign(c) {
   log(`Sending to ${subs.length} subscribers…`);
   let sent = 0, failed = 0;
   for (const [i, s] of subs.entries()) {
-    const r = await sendTo(s.phone, fillName(c.message, s.name));
+    let r = await sendTo(s.phone, fillName(c.message, s.name));
+    if (r.retry && await waitUntilReady()) r = await sendTo(s.phone, fillName(c.message, s.name)); // reconnected: try once more
     r.ok ? sent++ : failed++;
     await db("deliveries", { method: "POST", body: { campaign_id: c.id, subscriber_id: s.id, phone: s.phone, status: r.ok ? "sent" : "failed", error: r.ok ? null : r.reason }, prefer: "return=minimal" });
     await patch("subscribers", `id=eq.${s.id}`, r.ok ? { last_sent_at: new Date().toISOString(), last_error: null } : { last_error: r.reason });
@@ -159,7 +189,12 @@ async function sendWelcomes() {
   const fresh = await db("subscribers?status=eq.active&welcomed_at=is.null&select=id,name,phone&order=created_at.asc&limit=5");
   for (const s of fresh) {
     const r = await sendTo(s.phone, fillName(WELCOME, s.name));
-    // mark as handled either way so a bad number isn't retried forever
+    if (!r.ok && r.reason !== "Number not on WhatsApp") {
+      // connection problem (PC slept etc.): leave it pending so it goes out once WhatsApp is back
+      await patch("subscribers", `id=eq.${s.id}`, { last_error: r.reason });
+      log(`Welcome for ${s.phone} will be retried - ${r.reason}`);
+      return;
+    }
     await patch("subscribers", `id=eq.${s.id}`, { welcomed_at: new Date().toISOString(), last_error: r.ok ? null : r.reason });
     log(`Welcome ${r.ok ? "sent to" : "failed for"} ${s.phone}${r.ok ? "" : " - " + r.reason}`);
     await sleep(3000 + Math.random() * 3000);

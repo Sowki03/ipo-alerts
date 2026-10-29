@@ -212,10 +212,8 @@ footer .disc{max-width:860px;margin-top:10px}
         <p id="successText">Your first IPO alert arrives on WhatsApp in the morning.</p>
         <p style="font-size:13px;margin-top:14px">Tip: save Sowki's number (+91 72070 21603) so the alerts always reach you.</p>
         <div class="after">
-          <p>👨‍👩‍👧 Want your family or close ones to get these too?</p>
-          <button class="btn btn-ghost" type="button" id="againBtn">Add their number</button>
-          <p style="margin-top:14px">📣 Know someone who chases IPOs?</p>
-          <button class="btn btn-primary" type="button" id="shareBtn">Share with friends</button>
+          <p>👨‍👩‍👧 Want your family and friends to get these too?</p>
+          <a class="btn btn-primary" id="shareBtn" target="_blank" rel="noopener">Share on WhatsApp</a>
         </div>
       </div>
     </div>
@@ -410,16 +408,9 @@ function resetForm() {
   document.getElementById("formView").style.display = "block";
 }
 
-// After subscribing: add a family member's number, or share the page
-document.getElementById("againBtn").addEventListener("click", () => { resetForm(); form.phone.focus(); });
-const SHARE_URL = "https://sowki03.github.io/ipo-alerts/";
-const SHARE_TEXT = "I get a free WhatsApp alert every morning with the IPOs actually worth applying for 📈 Join here:";
-document.getElementById("shareBtn").addEventListener("click", async () => {
-  if (navigator.share) {
-    try { await navigator.share({ title: "IPO Pulse", text: SHARE_TEXT, url: SHARE_URL }); return; } catch (e) { if (e.name === "AbortError") return; }
-  }
-  window.open("https://wa.me/?text=" + encodeURIComponent(`${SHARE_TEXT} ${SHARE_URL}`), "_blank");
-});
+// After subscribing: opens WhatsApp with the signup link ready to send to family and friends
+const SHARE_TEXT = "I get a free WhatsApp alert every morning with the IPOs actually worth applying for 📈 Join here: https://sowki03.github.io/ipo-alerts/";
+document.getElementById("shareBtn").href = "https://wa.me/?text=" + encodeURIComponent(SHARE_TEXT);
 </script>
 </body>
 </html>
