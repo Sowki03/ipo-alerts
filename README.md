@@ -43,7 +43,7 @@ On days with nothing above 20%, friends get one of 91 rotating funny lines inste
 
 ## Two ways to send
 
-- **💻 From PC:** automatic, one by one, with each friend's first name. Start `sender/start-sender.bat` and keep it open. The admin page shows whether the sender is online. A send that waits more than 30 minutes (PC off) is skipped, so stale alerts never go out late.
+- **💻 From PC:** automatic, one by one, with each friend's name as they typed it. Start `sender/start-sender.bat` and keep it open. The admin page shows whether the sender is online. A send that waits more than 30 minutes (PC off) is skipped, so stale alerts never go out late.
 - **📱 From phone:** for when you're away from the PC. Copy the message on the admin page and paste it into your WhatsApp broadcast list. Everyone gets the same "Good morning!" text. Friends must have your number saved for broadcast messages to reach them; the admin page lists who to add to or remove from the list.
 
 ## Project layout

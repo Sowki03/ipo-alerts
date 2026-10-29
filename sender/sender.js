@@ -38,9 +38,10 @@ async function db(pathAndQuery, { method = "GET", body, prefer } = {}) {
 const patch = (table, filter, body) => db(`${table}?${filter}`, { method: "PATCH", body, prefer: "return=minimal" });
 
 // ---------- Messages ----------
+// Full name as they typed it ("S Pranav" stays "S Pranav"), extra spaces tidied
 function fillName(message, name) {
-  const first = String(name || "").trim().split(/\s+/)[0];
-  return first ? message.replaceAll("{name}", first) : message.replaceAll(" {name}", "").replaceAll("{name}", "");
+  const full = String(name || "").trim().replace(/\s+/g, " ");
+  return full ? message.replaceAll("{name}", full) : message.replaceAll(" {name}", "").replaceAll("{name}", "");
 }
 const WELCOME = `👋 *Hey {name}!* You're on Sowki's IPO alert list now 🎉\n\n` +
   `Whenever an IPO is worth a look, you'll get a short morning message with how much you need to apply and what you could make.`;

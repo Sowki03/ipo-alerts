@@ -62,10 +62,10 @@ function buildMessage(hot, nothingLine) {
   return msg + `\n_⚠️ IPO investments are subject to market risks. Expected gains are not guaranteed._`;
 }
 
-// "Good morning {name}!" -> "Good morning Pavan!" or "Good morning!" when there's no name
+// "Good morning {name}!" -> "Good morning S Pranav!" (full name as typed) or "Good morning!" when there's no name
 function fillName(message, name) {
-  const first = String(name || "").trim().split(/\s+/)[0];
-  return first ? message.replaceAll("{name}", first) : message.replaceAll(" {name}", "").replaceAll("{name}", "");
+  const full = String(name || "").trim().replace(/\s+/g, " ");
+  return full ? message.replaceAll("{name}", full) : message.replaceAll(" {name}", "").replaceAll("{name}", "");
 }
 
 // Pick an empty-day line not used in the recent sends
