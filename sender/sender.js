@@ -45,6 +45,9 @@ function fillName(message, name) {
 const WELCOME = `👋 *Hey {name}!* You're on Sowki's IPO alert list now 🎉\n\n` +
   `Whenever an IPO is worth a look, you'll get a short morning message with how much you need to apply and what you could make.`;
 // (WELCOME is also in js/admin.js for "Send from phone": keep the two in sync)
+const UNSUB_CODE = code => `🔐 Your code to stop IPO alerts: *${code}*\n\n` +
+  `Type it on the unsubscribe page. It works for 10 minutes.\n` +
+  `_Didn't ask for this? Just ignore this message, nothing will change._`;
 const STOPPED = `✌️ Done! You won't get any more IPO alerts. Reply *START* anytime to come back.`;
 const RESTARTED = `👋 Welcome back! IPO alerts are on again.`;
 
@@ -213,10 +216,29 @@ async function tick() {
   finally { busy = false; }
 }
 
+// Unsubscribe codes are time-sensitive, so they run on their own loop and don't wait for a long send
+let codesBusy = false;
+async function sendUnsubCodes() {
+  if (codesBusy || wa.state !== "ready") return;
+  codesBusy = true;
+  try {
+    const since = new Date(Date.now() - 10 * 60000).toISOString();
+    const codes = await db(`unsub_codes?sent_at=is.null&send_error=is.null&used_at=is.null&created_at=gt.${since}&select=id,phone,code&order=created_at.asc&limit=5`);
+    for (const c of codes) {
+      const r = await sendTo(c.phone, UNSUB_CODE(c.code));
+      if (r.retry) break; // reconnecting: try again on the next round
+      await patch("unsub_codes", `id=eq.${c.id}`, r.ok ? { sent_at: new Date().toISOString() } : { send_error: r.reason });
+      log(`Unsubscribe code ${r.ok ? "sent to" : "failed for"} ${c.phone}${r.ok ? "" : " - " + r.reason}`);
+    }
+  } catch (e) { log("codes:", e.message); }
+  finally { codesBusy = false; }
+}
+
 log("IPO Alerts sender starting…");
 startWhatsApp();
 heartbeat();
 setInterval(heartbeat, 20000);
+setInterval(sendUnsubCodes, 3000);
 setInterval(tick, 5000);
 
 process.on("SIGINT", async () => {

@@ -7,38 +7,110 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/app.css">
+<style>
+.code-input{letter-spacing:.4em;font-size:22px;text-align:center;font-weight:700}
+.link-btn{background:none;border:0;color:var(--brand);font:600 14px Inter,system-ui,sans-serif;cursor:pointer;padding:0}
+.link-btn:disabled{color:var(--muted);cursor:default}
+</style>
 </head>
 <body>
 <div class="wrap narrow">
   <p style="margin:20px 0 28px"><a href="./">← IPO Pulse</a></p>
   <div class="card">
     <h1>Unsubscribe</h1>
-    <p class="muted" style="margin:6px 0 18px">Enter the WhatsApp number you signed up with and you won't get any more IPO alerts.</p>
-    <form id="f" class="stack" novalidate>
+
+    <!-- Step 1: number -->
+    <form id="stepPhone" class="stack" novalidate>
+      <p class="muted" style="margin-top:6px">Enter the WhatsApp number you signed up with. We'll WhatsApp you a 6-digit code to confirm it's you.</p>
       <label class="f">WhatsApp number
-        <input class="input" name="phone" type="tel" inputmode="numeric" placeholder="98765 43210" maxlength="14" required>
+        <input class="input" name="phone" type="tel" inputmode="numeric" autocomplete="tel-national" placeholder="98765 43210" maxlength="20" required>
       </label>
-      <button class="btn btn-primary" id="btn" type="submit">Unsubscribe me</button>
-      <div class="note" id="note" role="alert"></div>
+      <button class="btn btn-primary" id="sendBtn" type="submit">Send me a code</button>
+      <div class="note" id="phoneNote" role="alert"></div>
     </form>
+
+    <!-- Step 2: code -->
+    <form id="stepCode" class="stack" novalidate hidden>
+      <p class="muted" style="margin-top:6px" id="codeIntro"></p>
+      <label class="f">6-digit code
+        <input class="input code-input" name="code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="••••••" required>
+      </label>
+      <button class="btn btn-primary" id="confirmBtn" type="submit">Unsubscribe me</button>
+      <div class="note" id="codeNote" role="alert"></div>
+      <div class="row" style="justify-content:space-between">
+        <button class="link-btn" type="button" id="changeNum">← Different number</button>
+        <button class="link-btn" type="button" id="resend">Send a new code</button>
+      </div>
+    </form>
+
+    <!-- Done -->
+    <div id="done" hidden>
+      <p class="note ok" style="font-size:16px">✅ Done. You won't get any more IPO alerts.</p>
+      <p class="muted" style="margin-top:8px">Changed your mind? Just <a href="./">sign up again</a>.</p>
+    </div>
   </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
 <script>
-const f = document.getElementById("f"), note = document.getElementById("note"), btn = document.getElementById("btn");
-f.addEventListener("submit", async e => {
+const $ = id => document.getElementById(id);
+const show = (el, text, cls) => { el.className = "note " + (cls || ""); el.textContent = text; };
+let phone = "", resendTimer = null;
+
+const NOT_SENT = {
+  offline: "We can't send codes right now. Reply STOP to Sowki on WhatsApp (+91 72070 21603) instead, or try again later.",
+  wait: "A code was just sent. Please wait a minute before asking for another.",
+  too_many: "Too many code requests today. Reply STOP to Sowki on WhatsApp (+91 72070 21603) instead.",
+};
+
+async function requestCode(note) {
+  if (!sb) return show(note, "This isn't set up yet. Reply STOP on WhatsApp instead.", "err");
+  const { data, error } = await sb.rpc("request_unsubscribe", { p_phone: phone });
+  if (error) return show(note, /fetch|network/i.test(error.message) ? "Couldn't reach the server. Check your internet and try again." : error.message, "err");
+  if (data !== "sent") return show(note, NOT_SENT[data] || "Something went wrong. Try again.", "err");
+  $("stepPhone").hidden = true; $("stepCode").hidden = false;
+  $("codeIntro").textContent = `If +91 ${phone.slice(0, 5)} ${phone.slice(5)} is on the list, a 6-digit code is on its way on WhatsApp. Enter it below.`;
+  show($("codeNote"), "");
+  $("stepCode").code.value = ""; $("stepCode").code.focus();
+  cooldown();
+}
+
+// "Send a new code" unlocks after 60 seconds (the database allows one code a minute)
+function cooldown() {
+  let left = 60; const b = $("resend");
+  clearInterval(resendTimer); b.disabled = true;
+  const tick = () => { b.textContent = left > 0 ? `Send a new code (${left}s)` : "Send a new code"; if (left-- <= 0) { b.disabled = false; clearInterval(resendTimer); } };
+  tick(); resendTimer = setInterval(tick, 1000);
+}
+
+$("stepPhone").addEventListener("submit", async e => {
   e.preventDefault();
-  const digits = f.phone.value.replace(/\D/g, "").replace(/^(91|0)(?=\d{10}$)/, "");
-  const show = (t, cls) => { note.className = "note " + cls; note.textContent = t; };
-  if (!/^[6-9]\d{9}$/.test(digits)) return show("Enter a valid 10-digit mobile number.", "err");
-  if (!sb) return show("This isn't set up yet. Reply STOP on WhatsApp instead.", "err");
-  btn.disabled = true;
-  const { data, error } = await sb.rpc("unsubscribe", { p_phone: digits });
-  btn.disabled = false;
-  if (error) return show(error.message, "err");
-  show(data === "unsubscribed" ? "Done. You won't get any more IPO alerts. Changed your mind? Just sign up again." : "That number isn't on the list, so there's nothing to stop.", "ok");
+  phone = e.target.phone.value.replace(/\D/g, "").replace(/^(91|0)(?=\d{10}$)/, "");
+  if (!/^[6-9]\d{9}$/.test(phone)) return show($("phoneNote"), "Enter a valid 10-digit mobile number.", "err");
+  $("sendBtn").disabled = true; show($("phoneNote"), "");
+  await requestCode($("phoneNote"));
+  $("sendBtn").disabled = false;
 });
+
+$("stepCode").addEventListener("submit", async e => {
+  e.preventDefault();
+  const code = e.target.code.value.replace(/\D/g, "");
+  if (code.length !== 6) return show($("codeNote"), "Enter all 6 digits.", "err");
+  $("confirmBtn").disabled = true;
+  const { data, error } = await sb.rpc("confirm_unsubscribe", { p_phone: phone, p_code: code });
+  $("confirmBtn").disabled = false;
+  if (error) return show($("codeNote"), error.message, "err");
+  if (data === "unsubscribed") { $("stepCode").hidden = true; $("done").hidden = false; clearInterval(resendTimer); return; }
+  show($("codeNote"), {
+    wrong: "That code doesn't match. Check WhatsApp and try again.",
+    expired: "That code has expired (or none was sent to this number). Ask for a new one.",
+    too_many: "Too many wrong tries. Ask for a new code.",
+  }[data] || "Something went wrong. Try again.", "err");
+});
+$("stepCode").code.addEventListener("input", e => { e.target.value = e.target.value.replace(/\D/g, "").slice(0, 6); });
+
+$("resend").onclick = () => requestCode($("codeNote"));
+$("changeNum").onclick = () => { $("stepCode").hidden = true; $("stepPhone").hidden = false; clearInterval(resendTimer); $("stepPhone").phone.focus(); };
 </script>
 </body>
 </html>

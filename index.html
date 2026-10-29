@@ -52,6 +52,9 @@ h1 em{font-style:normal;color:var(--brand)}
 .stats{display:flex;gap:28px;margin-top:32px;flex-wrap:wrap}
 .stat b{display:block;font-size:26px;font-weight:800;letter-spacing:-.02em}
 .stat span{font-size:13px;color:var(--muted)}
+.stat.members b{color:var(--brand);font-variant-numeric:tabular-nums}
+.stat.members b.bump{animation:bump .5s ease}
+@keyframes bump{50%{transform:scale(1.25)}}
 
 /* form card */
 .card{background:var(--surface);border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow)}
@@ -181,6 +184,7 @@ footer .disc{max-width:860px;margin-top:10px}
         <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>"Closing today" flagged first — last chance to apply</li>
       </ul>
       <div class="stats">
+        <div class="stat members" id="membersStat" hidden><b id="memberCount">0</b><span>people already signed up</span></div>
         <div class="stat"><b>20%+</b><span>GMP filter</span></div>
         <div class="stat"><b>1 msg</b><span>per day, max</span></div>
         <div class="stat"><b>₹0</b><span>always free</span></div>
@@ -351,6 +355,36 @@ async function loadIPOs() {
 }
 loadIPOs();
 
+// --- Member count: counts up from 0 when it comes into view ---
+const countEl = document.getElementById("memberCount");
+let members = 0;
+function countUp(to) {
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) { countEl.textContent = to.toLocaleString("en-IN"); return; }
+  const start = performance.now(), dur = Math.min(2000, 600 + to * 15);
+  const step = now => {
+    const t = Math.min(1, (now - start) / dur), eased = 1 - Math.pow(1 - t, 3);
+    countEl.textContent = Math.round(eased * to).toLocaleString("en-IN");
+    if (t < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+async function loadMembers() {
+  if (!sb) return;
+  const { data, error } = await sb.rpc("subscriber_count");
+  if (error || !data) return; // stays hidden on error or before anyone has joined
+  members = data;
+  const stat = document.getElementById("membersStat");
+  stat.hidden = false;
+  new IntersectionObserver((entries, obs) => {
+    if (entries[0].isIntersecting) { countUp(members); obs.disconnect(); }
+  }).observe(stat);
+}
+function bumpMembers() {
+  members++; countEl.textContent = members.toLocaleString("en-IN");
+  countEl.classList.remove("bump"); void countEl.offsetWidth; countEl.classList.add("bump");
+}
+loadMembers();
+
 // --- Subscribe ---
 const form = document.getElementById("subForm"), msg = document.getElementById("formMsg"), btn = document.getElementById("subBtn");
 const phoneInput = form.phone;
@@ -373,6 +407,7 @@ form.addEventListener("submit", async e => {
     if (data === "updated") return alreadyRegistered();
     document.getElementById("formView").style.display = "none";
     document.getElementById("successView").style.display = "block";
+    if (data === "new" || data === "resubscribed") bumpMembers();
   } catch (err) {
     fail(/fetch|network/i.test(err.message) ? "Couldn't reach the server. Check your internet and try again." : err.message);
   } finally {

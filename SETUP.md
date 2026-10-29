@@ -12,7 +12,8 @@ Friends sign up on the public page, you check the day's IPOs on the admin page, 
 
 ## 1. Supabase
 1. Create a new project at supabase.com (free plan, region Mumbai).
-2. SQL Editor → New query → paste `supabase/schema.sql` → Run.
+2. SQL Editor → New query → paste `supabase/schema.sql` → Run. Then do the same with
+   `supabase/002_unsubscribe_codes.sql` (WhatsApp-code unsubscribe + member count).
 3. In another query, add yourself as admin:
    `insert into public.admins (email) values ('your-email@gmail.com');`
 4. Authentication → URL Configuration: set **Site URL** to your Pages link
