@@ -107,7 +107,12 @@ function startWhatsApp() {
   client.on("message", msg => {
     if (msg.from.endsWith("@c.us")) handleReply(msg.from.replace("@c.us", ""), msg.body || "").catch(e => log("reply:", e.message));
   });
-  client.initialize().catch(e => { wa.state = "error"; log("WhatsApp failed to start:", e.message); });
+  client.initialize().catch(e => {
+    // usually the internet was down; keep trying instead of staying stuck in "error"
+    wa.state = "error"; log("WhatsApp failed to start:", e.message, "- trying again in 1 minute");
+    heartbeat();
+    setTimeout(() => restartWhatsApp("retry after failed start"), 60000);
+  });
 }
 
 async function sendTo(phone, text) {
